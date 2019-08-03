@@ -17,7 +17,7 @@ def read_a_file(fp):
         for line in fread.readlines():
             if line[0]=='%':
                 continue
-            line = line.split(' ')
+            line = line.split(' ')[:2]
             lines.append(line)
     #print len(lines)
     return make_graph(lines)
@@ -25,7 +25,6 @@ def read_a_file(fp):
 
 def make_graph(lines):
     dg = nx.DiGraph()
-    lines = [ line[:2] for line in lines ]
     dg.add_edges_from(lines)
     return dg
 
