@@ -12,6 +12,7 @@ import HATA as hata
 
 
 def read_a_file(fp):
+    print('reading file')
     lines = []
     with open(fp, 'r') as fread:
         for line in fread.readlines():
@@ -24,6 +25,7 @@ def read_a_file(fp):
 
 
 def make_graph(lines):
+    print('making DiGraph')
     dg = nx.DiGraph()
     dg.add_edges_from(lines)
     return dg
@@ -37,12 +39,13 @@ def process_one_graph(fp):
     g = read_a_file(fp)
 
     dirpath, fn1 = os.path.split(fp)
-    fp2 = os.path.join(dirpath, fn1+'_pos.json')
+    #fp2 = os.path.join(dirpath, fn1+'_pos.json')
     fp3 = os.path.join(dirpath, fn1+'_ext.json')
     fp4 = os.path.join(dirpath, fn1+'_int.json')
     fp5 = os.path.join(dirpath, fn1+'_out.graphml')
     fp6 = os.path.join(dirpath, fn1+'_res.png')
-
+    """
+    print('prepare pos file')
     if not(os.path.isfile(fp2)):
         pos = nx.spring_layout(g)
         pos = { k:(v[0], v[1]) for k,v in pos.items() }
@@ -51,7 +54,9 @@ def process_one_graph(fp):
     else:
         with open(fp2, 'r') as fread:
             pos = json.load(fread)
+    """
 
+    print('start running algorithm')
     if not(os.path.isfile(fp5)):
         dg, ext_dic, int_dic = hata.bridge_or_bond(g, times=100,
                                         external=None,  threads=12,
@@ -61,6 +66,7 @@ def process_one_graph(fp):
         with open(fp4, 'w') as fp_hand:
             json.dump(int_dic, fp_hand, indent=2, sort_keys=True)
         nx.write_graphml(dg, fp5)
+        print('making figures')
         make_fig(dg, pos, fn1[:-4], fp6)
     else:
         print('done before, skip', fp)
