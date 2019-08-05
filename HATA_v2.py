@@ -57,7 +57,7 @@ def generate_ego_graph(g, sp):
         #pool = pathos.threading.ThreadPool(nodes=threads_no)
         pool = pathos.multiprocessing.ProcessingPool(nodes=threads_no)
         iterlist = [(g, n, r) for n in g.nodes(data=False)]
-        random_results = pool.map(a_node_ego, iterlist)
+        random_results = pool.imap(a_node_ego, iterlist)
     ego_pbar.close()
 
 def get_outgoing_ego_graph(g, s, t, l):
@@ -158,9 +158,9 @@ def compute_link_property(g, sp):
     if True:
         global compute_link_prop_bar
         compute_link_prop_bar = tqdm(total=g.number_of_edges(), desc='computing arc prop.')
-        pool = pathos.threading.ThreadPool(nodes=threads_no)
+        pool = pathos.multiprocessing.ProcessingPool(nodes=threads_no)
         iterlist = [ (g, c, sp, s, t) for s, t in g.edges(data=False) ]
-        random_results = pool.map(processing_link_property, iterlist)
+        random_results = pool.imap(processing_link_property, iterlist)
         compute_link_prop_bar.close()
     else:
         for s, t in g.edges(data = False):
@@ -221,9 +221,9 @@ def get_external_threshold(g, kmax, times, random_pre):
         pbar_pool = tqdm(total=times)#, desc='randomizing with no. thread: '+str(threads))
         if False: #g.number_of_edges()>100:
             #print 'start randomizing with no. thread: '+str(threads)
-            pool = pathos.threading.ThreadPool(nodes=threads_no)
+            pool = pathos.multiprocessing.ProcessingPool(nodes=threads_no)
             iterlist = [(c, g, kmax, random_pre) for c in range(times)]
-            random_results = pool.map(randomizing, iterlist)
+            random_results = pool.imap(randomizing, iterlist)
         else:
             for c in range(times):
                 random_results.append((randomizing((c, g, kmax, random_pre))))
