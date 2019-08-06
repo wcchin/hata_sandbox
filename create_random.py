@@ -39,7 +39,6 @@ def make_graph(lines):
     dgs = sorted(nx.weakly_connected_component_subgraphs(dg, copy=False), key=len, reverse=True)
     return dgs[0]
 
-"""
 def average_shortest_path_length(g):
     nlist = list(node for node in g.nodes())
     total = 0
@@ -52,7 +51,12 @@ def average_shortest_path_length(g):
         elif nx.has_path(g, source = t, target = s):
            total += nx.shortest_path_length(g, source = t, target = s)
            count += 1
-    return (total / float(count))
+    if count<=0:
+        aspl = 1
+    else:
+        aspl = total / float(count)
+    return aspl
+
 """
 
 def average_shortest_path_length(g):
@@ -61,12 +65,14 @@ def average_shortest_path_length(g):
     count = 0
     if len(nlist)>500:
         ns = random.sample(nlist, k = 500)
-        for s in tqdm(ns, 'Calculating average shortest path length'):
-            #s, t = random.sample(nlist, k = 2)
+        i = 0
+        while count<1000:
+            s = ns[i]
             p = nx.shortest_path_length(g, source = s)
             for t,v in p.items():
                 total += v
                 count += 1
+            i+=1
     else:
         p = nx.all_pairs_shortest_path_length(g)
         for s,a in p.items():
@@ -75,7 +81,7 @@ def average_shortest_path_length(g):
                 count += 1
     aspl = (total / float(count))
     return aspl
-
+"""
 
 def a_node_ego((g, n, r)):
     global ego_pbar
@@ -193,10 +199,10 @@ def generating((i, dg, fout, kmax)):
 def main():
     #global pbar
     times = 100
-    threads_no = 12
-    basedir = 'data3/Konect'
+    threads_no = 8
+    basedir = 'data3/Konect_data'
     dirs = sorted(os.listdir(basedir))
-    for dir in dirs:
+    for dir in dirs[8:]:
         #dir = dirs[0]
         fs = sorted(os.listdir(os.path.join(basedir, dir, 'net')))
         #print(fs)
@@ -231,8 +237,13 @@ def main():
             pool = pathos.multiprocessing.ProcessingPool(nodes=threads_no)
             #print(len(iterlist))
             res = pool.imap(generating, iterlist)
+            #res.get()
+            for re in res:
+                print(re)
+            #pool.close()
+            #pool.join()
             #print("...")
-            print(list(res))
+            #print(list(res))
             #break
         #break
     print('done')
