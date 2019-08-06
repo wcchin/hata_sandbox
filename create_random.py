@@ -5,6 +5,9 @@ import networkx as nx
 from tqdm import tqdm
 import pathos
 import json
+import random
+import math
+import scipy
 
 
 EGO_NETWORK_OUT = 'ego_O_'
@@ -23,7 +26,7 @@ def read_a_file(fp):
         for line in fread.readlines():
             if line[0]=='%':
                 continue
-            line = line.split(' ')[:2]
+            line = line.strip().split(' ')[:2]
             lines.append(line)
     #print len(lines)
     return make_graph(lines)
@@ -36,7 +39,7 @@ def make_graph(lines):
     dgs = sorted(nx.weakly_connected_component_subgraphs(dg, copy=False), key=len, reverse=True)
     return dgs[0]
 
-
+"""
 def average_shortest_path_length(g):
     nlist = list(node for node in g.nodes())
     total = 0
@@ -50,7 +53,28 @@ def average_shortest_path_length(g):
            total += nx.shortest_path_length(g, source = t, target = s)
            count += 1
     return (total / float(count))
+"""
 
+def average_shortest_path_length(g):
+    nlist = list(node for node in g.nodes())
+    total = 0
+    count = 0
+    if len(nlist)>500:
+        ns = random.sample(nlist, k = 500)
+        for s in tqdm(ns, 'Calculating average shortest path length'):
+            #s, t = random.sample(nlist, k = 2)
+            p = nx.shortest_path_length(g, source = s)
+            for t,v in p.items():
+                total += v
+                count += 1
+    else:
+        p = nx.all_pairs_shortest_path_length(g)
+        for s,a in p.items():
+            for t,v in a.items():
+                total += v
+                count += 1
+    aspl = (total / float(count))
+    return aspl
 
 
 def a_node_ego((g, n, r)):
@@ -153,7 +177,7 @@ def generating((i, dg, fout, kmax)):
                 list(d for n, d in dg.in_degree()),
                 list(d for n, d in dg.out_degree()),
                 create_using = nx.DiGraph()))
-        rg = compute_link_property(rg, sp)
+        rg = compute_link_property(rg, kmax)
         meas = {str(i+1): rg.graph[GRAPH_KEY_AVG_COMMON_NODES + str(i+1)] for i in range(kmax)}
         stds = {str(i+1): rg.graph[GRAPH_KEY_STD_COMMON_NODES + str(i+1)] for i in range(kmax)}
         #nx.write_pajek(rg, fout)
@@ -163,9 +187,10 @@ def generating((i, dg, fout, kmax)):
 
     if i%10==0:
         print('generated %s'%(str(i)))
+    return tmp
 
 
-if __name__ == '__main__':
+def main():
     #global pbar
     times = 100
     threads_no = 12
@@ -191,20 +216,36 @@ if __name__ == '__main__':
                 os.makedirs(outdir)
 
             dg = read_a_file(fp)
-            kmax = average_shortest_path_length(dg)
+            print(f, dg.number_of_nodes(), dg.number_of_edges())
+            avg_sp = average_shortest_path_length(dg)
+            kmax  = max(1, int(math.floor(avg_sp / 2.0)))
             #if dg.number_of_edges()<=2: continue
-            print(dg.number_of_nodes(), dg.number_of_edges())
             fsum = os.path.join(basedir, dir, 'net', 'base_info', f+'_basicsummary.txt')
             with open(fsum, 'w') as fhand:
-                fhand.write(','.join([dg.number_of_nodes(), dg.number_of_edges(), kmax])+'\n')
+                fhand.write(','.join([str(dg.number_of_nodes()), str(dg.number_of_edges()), str(kmax)])+'\n')
 
             iterlist = []
             for i in range(times):
                 fout = os.path.join(outdir, f+'_r%s.json'%(str(i).zfill(3)))
                 iterlist.append((i, dg, fout, kmax))
-            #pool = pathos.threading.ThreadPool(nodes=threads_no)
-            #random_results = pool.map(generating, iterlist)
             pool = pathos.multiprocessing.ProcessingPool(nodes=threads_no)
-            pool.imap(generating, iterlist)
+            #print(len(iterlist))
+            res = pool.imap(generating, iterlist)
+            #print("...")
+            print(list(res))
             #break
+        #break
     print('done')
+
+
+def test():
+    basedir = 'data3/Konect_data'
+    dirs = sorted(os.listdir(basedir))
+    for dir in dirs[7:8]:
+        #print(dir)
+        fs = sorted(os.listdir(os.path.join(basedir, dir, 'net')))
+        print(fs)
+
+if __name__ == '__main__':
+    main()
+    #test()
