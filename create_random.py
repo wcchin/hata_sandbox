@@ -23,7 +23,7 @@ def make_graph(lines):
     dg = nx.DiGraph()
     dg.add_edges_from(lines)
     dgs = sorted(nx.weakly_connected_component_subgraphs(dg, copy=False), key=len, reverse=True)
-    return dgs
+    return dgs[0]
 
 
 def generating((i, dg, fout)):
@@ -61,20 +61,17 @@ if __name__ == '__main__':
             if not os.path.exists(outdir):
                 os.makedirs(outdir)
 
-            dgs = read_a_file(fp)
-            k = 0
-            for dg in dgs:
-                if dg.number_of_edges()<=2: continue
-                print(dg.number_of_nodes(), dg.number_of_edges())
+            dg = read_a_file(fp)
+            #if dg.number_of_edges()<=2: continue
+            print(dg.number_of_nodes(), dg.number_of_edges())
 
-                iterlist = []
-                for i in range(times):
-                    fout = os.path.join(outdir, f+'_c%s_r%s.net'%(str(k), str(i).zfill(3)))
-                    iterlist.append((i, dg, fout))
-                #pool = pathos.threading.ThreadPool(nodes=threads_no)
-                #random_results = pool.map(generating, iterlist)
-                pool = pathos.multiprocessing.ProcessingPool(nodes=threads_no)
-                pool.imap(generating, iterlist)
-                k+=1
+            iterlist = []
+            for i in range(times):
+                fout = os.path.join(outdir, f+'_r%s.net'%(str(i).zfill(3)))
+                iterlist.append((i, dg, fout))
+            #pool = pathos.threading.ThreadPool(nodes=threads_no)
+            #random_results = pool.map(generating, iterlist)
+            pool = pathos.multiprocessing.ProcessingPool(nodes=threads_no)
+            pool.imap(generating, iterlist)
             #break
     print('done')
